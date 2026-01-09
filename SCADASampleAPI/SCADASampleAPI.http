@@ -1,0 +1,6 @@
+@SCADASampleAPI_HostAddress = http://localhost:5095
+
+GET {{SCADASampleAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

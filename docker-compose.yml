@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  mssql:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sample-scada-mssql
+    environment:
+      - SA_PASSWORD=yourStrong(!)Password
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+    networks:
+      - scada-sample-network
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+volumes:
+  mssql_data:
+
+networks:
+  scada-sample-network:
+    driver: bridge
