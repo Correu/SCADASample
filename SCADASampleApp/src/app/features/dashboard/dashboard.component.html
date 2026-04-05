@@ -1,0 +1,47 @@
+<div class="page">
+  <h2>Pipelines</h2>
+  <p class="sub">Live tag values stream over SignalR; open a pipeline for full tag lists.</p>
+
+  <div class="grid">
+    @for (p of pipelines(); track p.pipelineId) {
+      <a class="card" [routerLink]="['/pipelines', p.pipelineId]">
+        <h3>{{ p.name }}</h3>
+        <span class="code">{{ p.code }}</span>
+        <p class="meta">{{ p.tagCount }} tags · {{ p.isActive ? 'Active' : 'Inactive' }}</p>
+      </a>
+    }
+  </div>
+
+  <h2>Live preview (first pipeline)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Tag</th>
+        <th>Value</th>
+        <th>Unit</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of sampleTags(); track t.tagId) {
+        <tr>
+          <td>{{ t.name }}</td>
+          <td>
+            @if (liveValue(t.tagId); as live) {
+              <strong>{{ live.value | number: '1.0-3' }}</strong>
+            } @else {
+              {{ t.currentValue | number: '1.0-3' }}
+            }
+          </td>
+          <td>{{ (liveValue(t.tagId)?.unit) ?? t.unit }}</td>
+          <td class="muted">
+            {{
+              (liveValue(t.tagId)?.timestampUtc | date: 'mediumTime') ??
+                (t.lastUpdatedUtc | date: 'mediumTime')
+            }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

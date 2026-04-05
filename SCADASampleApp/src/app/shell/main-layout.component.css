@@ -1,0 +1,79 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f1f5f9;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.brand {
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  margin-right: 1rem;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+nav a {
+  color: #94a3b8;
+  text-decoration: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+nav a:hover,
+nav a.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.email {
+  color: #e2e8f0;
+}
+
+.roles {
+  color: #94a3b8;
+}
+
+.user button {
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.user button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.content {
+  flex: 1;
+  padding: 1.5rem;
+}

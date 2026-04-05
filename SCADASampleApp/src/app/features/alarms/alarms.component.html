@@ -1,0 +1,39 @@
+<div class="page">
+  <h2>Alarms</h2>
+  <div class="filters">
+    <label>
+      Pipeline ID (optional)
+      <input type="number" [(ngModel)]="pipelineFilter" (change)="load()" />
+    </label>
+    <button type="button" (click)="load()">Refresh</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Pipeline</th>
+        <th>Tag</th>
+        <th>Type</th>
+        <th>Message</th>
+        <th>Active</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (a of alarms(); track a.alarmId) {
+        <tr [class.active-row]="a.isActive">
+          <td>{{ a.pipeline?.name ?? a.pipelineId }}</td>
+          <td>{{ a.tag?.name ?? a.tagId }}</td>
+          <td>{{ a.alarmType }}</td>
+          <td>{{ a.message }}</td>
+          <td>{{ a.isActive ? 'Yes' : 'No' }}</td>
+          <td>
+            @if (auth.canAcknowledgeAlarms() && a.isActive) {
+              <button type="button" class="small" (click)="acknowledge(a.alarmId)">Acknowledge</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

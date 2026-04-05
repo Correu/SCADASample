@@ -1,0 +1,40 @@
+<div class="page">
+  @if (pipeline(); as p) {
+    <h2>{{ p.name }}</h2>
+    <p class="sub">{{ p.code }} · {{ p.tagCount }} tags</p>
+  } @else {
+    <p class="sub">Pipeline not found.</p>
+  }
+
+  <table>
+    <thead>
+      <tr>
+        <th>Tag</th>
+        <th>Value</th>
+        <th>Range</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of tags(); track t.tagId) {
+        <tr>
+          <td>{{ t.name }}</td>
+          <td>
+            @if (liveValue(t.tagId); as live) {
+              <strong>{{ live.value | number: '1.0-3' }}</strong> {{ live.unit }}
+            } @else {
+              {{ t.currentValue | number: '1.0-3' }} {{ t.unit }}
+            }
+          </td>
+          <td class="muted">{{ t.minValue }} – {{ t.maxValue }}</td>
+          <td class="muted">
+            {{
+              (liveValue(t.tagId)?.timestampUtc | date: 'mediumTime') ??
+                (t.lastUpdatedUtc | date: 'mediumTime')
+            }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

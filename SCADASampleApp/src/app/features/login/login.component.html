@@ -1,0 +1,27 @@
+<div class="login-page">
+  <div class="card">
+    <h1>SCADA Sample</h1>
+    <p class="hint">Sign in with your assigned role (Admin / Operator / Viewer).</p>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+    <form (ngSubmit)="submit()">
+      <label>
+        <span>Email</span>
+        <input type="email" name="email" [(ngModel)]="email" required autocomplete="username" />
+      </label>
+      <label>
+        <span>Password</span>
+        <input
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          required
+          autocomplete="current-password"
+        />
+      </label>
+      <button type="submit" [disabled]="busy()">Sign in</button>
+    </form>
+    <p class="footer-hint">Default dev admin: <code>{{ adminHint }}</code> / <code>Admin123!</code></p>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors (keep .vscode/ committable for tasks, launch, extensions)
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.history/
+
+# Angular / tooling cache
+/.angular/cache
+.sass-cache/
+/coverage
+
+# System files
+.DS_Store
+Thumbs.db

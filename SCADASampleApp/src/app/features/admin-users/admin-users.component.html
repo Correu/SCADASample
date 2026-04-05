@@ -1,0 +1,64 @@
+<div class="page">
+  <h2>User administration</h2>
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <section class="panel">
+    <h3>Create user</h3>
+    <div class="row">
+      <label>
+        Email
+        <input type="email" [(ngModel)]="newEmail" />
+      </label>
+      <label>
+        Password
+        <input type="password" [(ngModel)]="newPassword" />
+      </label>
+      <label>
+        Role
+        <select [(ngModel)]="newRole">
+          @for (r of rolesList(); track r) {
+            <option [value]="r">{{ r }}</option>
+          }
+        </select>
+      </label>
+      <button type="button" (click)="create()">Create</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Users</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Roles</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of users(); track u.id) {
+          <tr>
+            <td>{{ u.email ?? u.userName }}</td>
+            <td class="roles">
+              @for (r of rolesList(); track r) {
+                <label class="chk">
+                  <input
+                    type="checkbox"
+                    [checked]="hasRole(u, r)"
+                    (change)="setRoles(u, r, $any($event.target).checked)"
+                  />
+                  {{ r }}
+                </label>
+              }
+            </td>
+            <td>
+              <button type="button" class="danger" (click)="deleteUser(u.id)">Delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</div>

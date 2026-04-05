@@ -1,0 +1,20 @@
+<div class="layout">
+  <header class="top">
+    <a routerLink="/" class="brand">SCADA Sample</a>
+    <nav>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+      <a routerLink="/alarms" routerLinkActive="active">Alarms</a>
+      @if (auth.hasRole('Admin')) {
+        <a routerLink="/admin/users" routerLinkActive="active">Users</a>
+      }
+    </nav>
+    <div class="user">
+      <span class="email">{{ auth.email() }}</span>
+      <span class="roles">({{ auth.roles().join(', ') }})</span>
+      <button type="button" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>
