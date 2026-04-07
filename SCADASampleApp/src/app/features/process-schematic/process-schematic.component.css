@@ -1,0 +1,152 @@
+.page {
+  max-width: 900px;
+}
+
+.back {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.back a {
+  color: #0ea5e9;
+  text-decoration: none;
+}
+
+.back a:hover {
+  text-decoration: underline;
+}
+
+.sep {
+  margin: 0 0.35rem;
+  color: #94a3b8;
+}
+
+h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+}
+
+h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.sub {
+  color: #64748b;
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+}
+
+.warn {
+  color: #b45309;
+  font-size: 0.9rem;
+}
+
+.schematic-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.schematic {
+  width: 100%;
+  max-height: 320px;
+  display: block;
+}
+
+.edge {
+  stroke: #94a3b8;
+  stroke-width: 3;
+  fill: none;
+}
+
+.edge-on {
+  stroke: #0ea5e9;
+}
+
+.edge-label {
+  font-size: 11px;
+  fill: #475569;
+  pointer-events: none;
+}
+
+.tank-ring {
+  fill: #fff;
+  stroke: #cbd5e1;
+  stroke-width: 2;
+}
+
+.tank-level-bg {
+  fill: #e2e8f0;
+}
+
+.tank-level-fill {
+  fill: #0ea5e9;
+}
+
+.tank-pct {
+  font-size: 10px;
+  fill: #64748b;
+  pointer-events: none;
+}
+
+.tank-code {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #0f172a;
+  pointer-events: none;
+}
+
+.tank-meta {
+  font-size: 10px;
+  fill: #64748b;
+  pointer-events: none;
+}
+
+.controls ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.controls li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.ctrl-label {
+  min-width: 120px;
+  font-family: ui-monospace, monospace;
+  color: #334155;
+}
+
+.pump-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #0ea5e9;
+  background: #fff;
+  color: #0369a1;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.pump-btn:hover:not(:disabled) {
+  background: #e0f2fe;
+}
+
+.pump-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}

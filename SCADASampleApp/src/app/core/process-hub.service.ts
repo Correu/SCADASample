@@ -7,7 +7,7 @@ import {
 } from '@microsoft/signalr';
 import { Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { TagValueUpdate } from '../models/api.models';
+import { LocationUpdate, TagValueUpdate, TransferUpdate } from '../models/api.models';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -18,6 +18,8 @@ export class ProcessHubService implements OnDestroy {
   private hub?: HubConnection;
 
   readonly tagUpdates = new Subject<TagValueUpdate>();
+  readonly locationUpdates = new Subject<LocationUpdate>();
+  readonly transferUpdates = new Subject<TransferUpdate>();
 
   async ensureConnected(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) {
@@ -45,6 +47,14 @@ export class ProcessHubService implements OnDestroy {
 
     this.hub.on('TagUpdate', (payload: TagValueUpdate) => {
       this.tagUpdates.next(payload);
+    });
+
+    this.hub.on('LocationUpdate', (payload: LocationUpdate) => {
+      this.locationUpdates.next(payload);
+    });
+
+    this.hub.on('TransferUpdate', (payload: TransferUpdate) => {
+      this.transferUpdates.next(payload);
     });
 
     try {

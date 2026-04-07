@@ -73,4 +73,65 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
 
         return Ok(tags);
     }
+
+    [HttpGet("{id:int}/process-graph")]
+    public async Task<ActionResult<ProcessGraphDto>> GetProcessGraph(int id)
+    {
+        var exists = await context.Pipelines.AnyAsync(p => p.PipelineId == id);
+        if (!exists)
+            return NotFound();
+
+        var locations = await context.ProcessLocations.AsNoTracking()
+            .Where(l => l.PipelineId == id)
+            .OrderBy(l => l.Code)
+            .Select(l => new ProcessLocationDto
+            {
+                ProcessLocationId = l.ProcessLocationId,
+                PipelineId = l.PipelineId,
+                Name = l.Name,
+                Code = l.Code,
+                Kind = l.Kind,
+                Capacity = l.Capacity,
+                CurrentVolume = l.CurrentVolume,
+                LayoutX = l.LayoutX,
+                LayoutY = l.LayoutY,
+                LastUpdatedUtc = l.LastUpdatedUtc
+            })
+            .ToListAsync();
+
+        var transfers = await context.ProcessTransfers.AsNoTracking()
+            .Where(t => t.PipelineId == id)
+            .OrderBy(t => t.ProcessTransferId)
+            .Select(t => new ProcessTransferDto
+            {
+                ProcessTransferId = t.ProcessTransferId,
+                PipelineId = t.PipelineId,
+                FromLocationId = t.FromLocationId,
+                ToLocationId = t.ToLocationId,
+                IsPumpRunning = t.IsPumpRunning,
+                ValveOpen = t.ValveOpen,
+                MaxFlowRate = t.MaxFlowRate,
+                CurrentFlowRate = t.CurrentFlowRate,
+                LastUpdatedUtc = t.LastUpdatedUtc
+            })
+            .ToListAsync();
+
+        return Ok(new ProcessGraphDto { Locations = locations, Transfers = transfers });
+    }
+
+    [HttpPost("{id:int}/transfers/{transferId:int}/pump")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> SetTransferPump(int id, int transferId, [FromBody] PumpStateRequest body)
+    {
+        var transfer = await context.ProcessTransfers
+            .FirstOrDefaultAsync(t => t.ProcessTransferId == transferId && t.PipelineId == id);
+
+        if (transfer == null)
+            return NotFound();
+
+        transfer.IsPumpRunning = body.Running;
+        transfer.LastUpdatedUtc = DateTimeOffset.UtcNow;
+        await context.SaveChangesAsync();
+        return NoContent();
+    }
 }

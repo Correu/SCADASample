@@ -120,6 +120,7 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
     await DbInitializer.SeedAsync(app.Services);
     await ScadaSeeder.SeedScadaAsync(db);
+    await ProcessGraphSeeder.SeedAsync(db);
 }
 
 if (app.Environment.IsDevelopment())

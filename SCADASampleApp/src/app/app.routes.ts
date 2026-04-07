@@ -15,6 +15,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/pipeline-detail/pipeline-detail.component').then((m) => m.PipelineDetailComponent),
       },
+      {
+        path: 'pipelines/:id/process',
+        loadComponent: () =>
+          import('./features/process-schematic/process-schematic.component').then((m) => m.ProcessSchematicComponent),
+      },
       { path: 'alarms', loadComponent: () => import('./features/alarms/alarms.component').then((m) => m.AlarmsComponent) },
       {
         path: 'admin/users',

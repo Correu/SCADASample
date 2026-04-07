@@ -37,6 +37,51 @@ public class SyntheticScadaBackgroundService : BackgroundService
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<ProcessHub>>();
 
+                var now = DateTimeOffset.UtcNow;
+                var dtHours = Math.Max(1, _options.UpdateIntervalSeconds) / 3600.0;
+
+                var transfers = await db.ProcessTransfers
+                    .Include(t => t.FromLocation)
+                    .Include(t => t.ToLocation)
+                    .Include(t => t.Pipeline)
+                    .Where(t => t.Pipeline!.IsActive)
+                    .OrderBy(t => t.ProcessTransferId)
+                    .ToListAsync(stoppingToken);
+
+                var touchedLocations = new Dictionary<int, ProcessLocation>();
+
+                foreach (var t in transfers)
+                {
+                    var src = t.FromLocation;
+                    var dst = t.ToLocation;
+                    if (src == null || dst == null)
+                        continue;
+
+                    if (!t.IsPumpRunning || !t.ValveOpen)
+                    {
+                        t.CurrentFlowRate = 0;
+                        t.LastUpdatedUtc = now;
+                        continue;
+                    }
+
+                    var maxDv = t.MaxFlowRate * dtHours;
+                    var fromAvailable = src.CurrentVolume;
+                    var toSpace = Math.Max(0, dst.Capacity - dst.CurrentVolume);
+                    var actualDv = Math.Min(maxDv, Math.Min(fromAvailable, toSpace));
+
+                    src.CurrentVolume -= actualDv;
+                    dst.CurrentVolume += actualDv;
+                    src.CurrentVolume = Math.Clamp(src.CurrentVolume, 0, src.Capacity);
+                    dst.CurrentVolume = Math.Clamp(dst.CurrentVolume, 0, dst.Capacity);
+
+                    t.CurrentFlowRate = dtHours > 0 ? actualDv / dtHours : 0;
+                    t.LastUpdatedUtc = now;
+                    src.LastUpdatedUtc = now;
+                    dst.LastUpdatedUtc = now;
+                    touchedLocations[src.ProcessLocationId] = src;
+                    touchedLocations[dst.ProcessLocationId] = dst;
+                }
+
                 var tags = await db.Tags
                     .Include(t => t.Pipeline)
                     .Where(t => t.Pipeline!.IsActive)
@@ -45,6 +90,33 @@ public class SyntheticScadaBackgroundService : BackgroundService
                 var alarms = await db.Alarms
                     .Where(a => a.IsEnabled)
                     .ToListAsync(stoppingToken);
+
+                foreach (var loc in touchedLocations.Values)
+                {
+                    var dto = new LocationUpdateDto
+                    {
+                        PipelineId = loc.PipelineId,
+                        ProcessLocationId = loc.ProcessLocationId,
+                        CurrentVolume = loc.CurrentVolume,
+                        Capacity = loc.Capacity,
+                        LastUpdatedUtc = loc.LastUpdatedUtc
+                    };
+                    await hubContext.Clients.All.SendAsync("LocationUpdate", dto, stoppingToken);
+                }
+
+                foreach (var t in transfers)
+                {
+                    var dto = new TransferUpdateDto
+                    {
+                        PipelineId = t.PipelineId,
+                        ProcessTransferId = t.ProcessTransferId,
+                        CurrentFlowRate = t.CurrentFlowRate,
+                        IsPumpRunning = t.IsPumpRunning,
+                        ValveOpen = t.ValveOpen,
+                        LastUpdatedUtc = t.LastUpdatedUtc
+                    };
+                    await hubContext.Clients.All.SendAsync("TransferUpdate", dto, stoppingToken);
+                }
 
                 foreach (var tag in tags)
                 {

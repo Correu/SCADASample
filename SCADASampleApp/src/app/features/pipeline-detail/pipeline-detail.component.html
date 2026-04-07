@@ -1,7 +1,10 @@
 <div class="page">
   @if (pipeline(); as p) {
     <h2>{{ p.name }}</h2>
-    <p class="sub">{{ p.code }} · {{ p.tagCount }} tags</p>
+    <p class="sub">
+      {{ p.code }} · {{ p.tagCount }} tags ·
+      <a [routerLink]="['/pipelines', p.pipelineId, 'process']">Process schematic</a>
+    </p>
   } @else {
     <p class="sub">Pipeline not found.</p>
   }

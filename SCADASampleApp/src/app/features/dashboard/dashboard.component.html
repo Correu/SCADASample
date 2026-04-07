@@ -4,11 +4,14 @@
 
   <div class="grid">
     @for (p of pipelines(); track p.pipelineId) {
-      <a class="card" [routerLink]="['/pipelines', p.pipelineId]">
-        <h3>{{ p.name }}</h3>
-        <span class="code">{{ p.code }}</span>
-        <p class="meta">{{ p.tagCount }} tags · {{ p.isActive ? 'Active' : 'Inactive' }}</p>
-      </a>
+      <div class="card-wrap">
+        <a class="card" [routerLink]="['/pipelines', p.pipelineId]">
+          <h3>{{ p.name }}</h3>
+          <span class="code">{{ p.code }}</span>
+          <p class="meta">{{ p.tagCount }} tags · {{ p.isActive ? 'Active' : 'Inactive' }}</p>
+        </a>
+        <a class="process-link" [routerLink]="['/pipelines', p.pipelineId, 'process']">Process schematic</a>
+      </div>
     }
   </div>
 

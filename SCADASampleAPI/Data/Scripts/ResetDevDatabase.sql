@@ -12,6 +12,8 @@ USE [SCADASampleDB];
 GO
 
 /* App tables (dependency order) */
+IF OBJECT_ID(N'[dbo].[ScadaProcessTransfers]', N'U') IS NOT NULL DROP TABLE [dbo].[ScadaProcessTransfers];
+IF OBJECT_ID(N'[dbo].[ScadaProcessLocations]', N'U') IS NOT NULL DROP TABLE [dbo].[ScadaProcessLocations];
 IF OBJECT_ID(N'[dbo].[ScadaAlarms]', N'U') IS NOT NULL DROP TABLE [dbo].[ScadaAlarms];
 IF OBJECT_ID(N'[dbo].[Alarms]', N'U') IS NOT NULL DROP TABLE [dbo].[Alarms];
 IF OBJECT_ID(N'[dbo].[ScadaTags]', N'U') IS NOT NULL DROP TABLE [dbo].[ScadaTags];

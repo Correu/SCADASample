@@ -17,4 +17,8 @@ public class Pipeline
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public ICollection<Alarm> Alarms { get; set; } = new List<Alarm>();
+
+    public ICollection<ProcessLocation> ProcessLocations { get; set; } = new List<ProcessLocation>();
+
+    public ICollection<ProcessTransfer> ProcessTransfers { get; set; } = new List<ProcessTransfer>();
 }

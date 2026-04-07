@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ProcessHubService } from '../../core/process-hub.service';
@@ -10,7 +10,7 @@ import { PipelineSummary, TagSnapshot, TagValueUpdate } from '../../models/api.m
 @Component({
   selector: 'app-pipeline-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './pipeline-detail.component.html',
   styleUrl: './pipeline-detail.component.css',
 })

@@ -71,6 +71,10 @@ export class AuthService {
     return this.hasRole('Admin') || this.hasRole('Operator');
   }
 
+  canOperateProcess(): boolean {
+    return this.hasRole('Admin') || this.hasRole('Operator');
+  }
+
   private persist(token: string, userEmail: string, roles: string[]): void {
     this.token.set(token);
     this.email.set(userEmail);

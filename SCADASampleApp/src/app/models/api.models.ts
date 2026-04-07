@@ -32,6 +32,54 @@ export interface TagValueUpdate {
   timestampUtc: string;
 }
 
+/** Volume in m³; flow rates in m³/h (see README). */
+export interface ProcessLocation {
+  processLocationId: number;
+  pipelineId: number;
+  name: string;
+  code: string;
+  kind?: string | null;
+  capacity: number;
+  currentVolume: number;
+  layoutX: number;
+  layoutY: number;
+  lastUpdatedUtc: string;
+}
+
+export interface ProcessTransfer {
+  processTransferId: number;
+  pipelineId: number;
+  fromLocationId: number;
+  toLocationId: number;
+  isPumpRunning: boolean;
+  valveOpen: boolean;
+  maxFlowRate: number;
+  currentFlowRate: number;
+  lastUpdatedUtc: string;
+}
+
+export interface ProcessGraph {
+  locations: ProcessLocation[];
+  transfers: ProcessTransfer[];
+}
+
+export interface LocationUpdate {
+  pipelineId: number;
+  processLocationId: number;
+  currentVolume: number;
+  capacity: number;
+  lastUpdatedUtc: string;
+}
+
+export interface TransferUpdate {
+  pipelineId: number;
+  processTransferId: number;
+  currentFlowRate: number;
+  isPumpRunning: boolean;
+  valveOpen: boolean;
+  lastUpdatedUtc: string;
+}
+
 export interface Alarm {
   alarmId: number;
   pipelineId: number;

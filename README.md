@@ -228,6 +228,8 @@ If you see **Introducing FOREIGN KEY constraint … may cause cycles or multiple
 
 SCADA tables are intentionally named **`ScadaTags`** and **`ScadaAlarms`** so they do not clash with unrelated tables named `Tags` / `Alarms` that may already exist in the database.
 
+Process graph tables **`ScadaProcessLocations`** and **`ScadaProcessTransfers`** are added the same way. If migrations fail part-way, include those names when cleaning the database, or run [`SCADASampleAPI/Data/Scripts/ResetDevDatabase.sql`](SCADASampleAPI/Data/Scripts/ResetDevDatabase.sql) (it drops process tables before alarms/tags).
+
 ### Where are users stored?
 
 ASP.NET Core Identity does not use a table named `Users`. Accounts are in **`AspNetUsers`** (plus **`AspNetRoles`**, **`AspNetUserRoles`**, etc.).
@@ -289,6 +291,25 @@ From there you can:
 
 - Inspect the available endpoints (e.g., weather forecast sample, alarms when implemented)
 - Execute requests directly in the browser
+
+---
+
+## Process graph (locations, transfers, simulation)
+
+Each **pipeline** can have a small directed **process graph**: **locations** (tanks/silos with volume and layout coordinates) and **transfers** (pump lines between two locations).
+
+- **Units**: volumes use **m³**; flow rates use **m³/h**. The background service advances volumes using `SyntheticScada:UpdateIntervalSeconds` as the time step (same options as tag simulation).
+- **Tables**: `ScadaProcessLocations`, `ScadaProcessTransfers`. **Delete behavior**: transfers use **Restrict** toward locations so SQL Server does not introduce multiple cascade paths from `Pipelines`.
+- **Seeding**: [`ProcessGraphSeeder`](SCADASampleAPI/Data/ProcessGraphSeeder.cs) runs after [`ScadaSeeder`](SCADASampleAPI/Data/ScadaSeeder.cs) and adds a **source → mix → discharge** graph for any pipeline that has no locations yet (layout `LayoutX` / `LayoutY` is seed-driven for the SVG schematic). One transfer is seeded with the pump **off** so operators can demonstrate starting it from the UI.
+- **REST** (JWT required on all routes below):
+  - `GET /api/pipelines/{id}/process-graph` — locations and transfers for drawing the graph.
+  - `POST /api/pipelines/{id}/transfers/{transferId}/pump` — body `{ "running": true | false }`. **Roles: Admin or Operator only.**
+- **SignalR** hub `/hubs/process` (same as tag updates; pass `?access_token=` when needed):
+  - `LocationUpdate` — `pipelineId`, `processLocationId`, `currentVolume`, `capacity`, `lastUpdatedUtc`.
+  - `TransferUpdate` — `pipelineId`, `processTransferId`, `currentFlowRate`, `isPumpRunning`, `valveOpen`, `lastUpdatedUtc`.
+- **Angular**: route **`/pipelines/:id/process`** — SVG schematic, live hub updates, pump toggles for Admin/Operator (`canOperateProcess()`); Viewers see read-only state.
+
+Existing **tags** and **alarms** remain for ancillary points (temperature, pressure, tank level %, etc.).
 
 ---
 
