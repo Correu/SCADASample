@@ -1,9 +1,10 @@
 ## SCADA Sample Project
 
-A small, opinionated sample of a **SCADA-style backend** built with ASP.NET Core and SQL Server.  
+A small, opinionated **full-stack SCADA-style sample**: an **Angular 19** SPA that talks to an **ASP.NET Core 8** Web API backed by **SQL Server** (Azure SQL Edge in Docker).  
 This repository is intended as a learning/reference project for:
 
-- **.NET 8 Web APIs**
+- **Angular 19** (standalone components, routing, HTTP client, SignalR, JWT auth)
+- **.NET 8 Web APIs** (Identity, JWT, Swagger)
 - **Entity Framework Core with SQL Server**
 - **Containerized local database development (Azure SQL Edge / SQL Server in Docker)**
 
@@ -16,11 +17,28 @@ SCADASample/
   README.md
   docker-compose.yml           # Local SQL Server (Azure SQL Edge) container
 
+  SCADASampleApp/              # Angular 19 front-end (SCADA UI)
+    package.json               # Scripts: ng serve, ng build, tests
+    angular.json               # CLI project, SSR options, dev-server defaults
+    src/
+      main.ts                  # Browser bootstrap
+      app/
+        app.config.ts          # Router, HttpClient + auth interceptor, hydration
+        app.routes.ts          # Lazy-loaded routes and guards
+        core/                  # Cross-cutting: auth, guards, interceptors, SignalR hub helpers
+        shell/                 # Main layout (nav, sign-out)
+        features/              # Route-level UI: dashboard, pipelines, alarms, admin, login
+        models/                # TypeScript shapes for API payloads
+      environments/
+        environment.ts         # production apiUrl (and file replacement in dev)
+        environment.development.ts
+
   SCADASampleAPI/              # ASP.NET Core Web API (backend)
     SCADASampleAPI.csproj
     Program.cs                 # App bootstrap, DI & middleware
     appsettings.json           # Main configuration (logging, connection string)
     appsettings.Development.json
+    Properties/launchSettings.json   # Local HTTP/HTTPS ports (must match Angular apiUrl)
 
     Controllers/
       AlarmsController.cs      # API endpoint(s) for alarms
@@ -30,22 +48,21 @@ SCADASample/
 
     Models/
       Alarms.cs                # Alarm entity representing SCADA alarms
-
-  SCADASampleApp/              # Angular front‑end client
-    package.json               # NPM scripts, dependencies (Angular CLI)
-    package-lock.json
-    src/                       # Angular source (components, modules, routes, etc.)
-    ...                        # Standard Angular CLI project structure
 ```
 
 ### High-Level Architecture
 
+- **Front-end** (`SCADASampleApp`)
+  - **Angular 19** SPA with lazy-loaded **standalone** feature components.
+  - **JWT** stored client-side; an **HTTP interceptor** attaches the bearer token to API calls.
+  - **@microsoft/signalr** for live tag and process-graph updates (aligned with API hubs).
+  - **SSR** is configured in `angular.json` (`main.server.ts`, `server.ts`); day-to-day local work is usually `ng serve` on **http://localhost:4200**.
 - **API layer** (`SCADASampleAPI`)
-  - ASP.NET Core Web API exposing endpoints (for example, an `Alarms` endpoint).
+  - ASP.NET Core Web API exposing REST endpoints (pipelines, alarms, process graph, Identity, etc.).
   - Uses **Swagger/OpenAPI** for interactive documentation in development.
 - **Data access layer**
   - `ApplicationDbContext` uses **Entity Framework Core** to map C# models to SQL tables.
-  - The `Alarms` entity models common alarm fields in a SCADA system (tag, setpoint, severity, message, enabled flag, etc.).
+  - SCADA-oriented entities (tags, alarms, process locations/transfers, etc.) live under `Models/` and `Data/`.
 - **Database**
   - SQL Server (via **Azure SQL Edge** image) runs in Docker, configured by `docker-compose.yml`.
   - The API connects via the `DefaultConnection` string in `appsettings.json`.
@@ -60,13 +77,15 @@ SCADASample/
 
 - **Backend / Framework**
   - ASP.NET Core 8 Web API (`Microsoft.NET.Sdk.Web`)
+  - ASP.NET Core **SignalR** (e.g. `/hubs/process` for live SCADA updates consumed by Angular)
   - Swagger/OpenAPI via:
     - `Microsoft.AspNetCore.OpenApi`
     - `Swashbuckle.AspNetCore`
 
 - **Frontend / Framework**
-  - Angular 19 (`@angular/core`, `@angular/router`, `@angular/forms`, etc.)
-  - Angular CLI 19
+  - Angular 19 (`@angular/core`, `@angular/router`, `@angular/forms`, standalone components)
+  - Angular CLI 19 (dev server, build, SSR toolchain)
+  - **@microsoft/signalr** for real-time SCADA updates from the API
   - RxJS, Zone.js
 
 - **Data Access**
@@ -92,50 +111,74 @@ SCADASample/
 
 ---
 
-## Running the Angular Client (`SCADASampleApp`)
+## Angular front-end (`SCADASampleApp`)
 
-The `SCADASampleApp/` project is an Angular 19 application intended to be the **SCADA UI** that sits on top of the `SCADASampleAPI` backend.
+`SCADASampleApp/` is the **operator-facing SCADA UI**: dashboard and pipeline views, live values over SignalR, alarms, login, and (for Admins) user management. It is built as an **Angular 19** application with **lazy-loaded routes** and **route guards** (`authGuard`, `adminGuard`).
 
-You normally want the **API + database** running first (see sections below), and then start the Angular dev server.
+### Layout of the Angular source
 
-### 1. Install dependencies
+| Area | Path | Role |
+|------|------|------|
+| Bootstrap & providers | `src/app/app.config.ts` | Router, `HttpClient` with **`authInterceptor`** (JWT on API calls), client hydration |
+| Routes | `src/app/app.routes.ts` | Lazy `loadComponent` entries and child routes under the shell |
+| Auth & realtime | `src/app/core/` | `auth.service`, `auth.guard`, `admin.guard`, `auth.interceptor`, `process-hub.service` (SignalR) |
+| Chrome | `src/app/shell/` | `MainLayoutComponent` — header nav (Dashboard, Alarms, Users for Admin), sign-out |
+| Features | `src/app/features/` | `login`, `dashboard`, `pipeline-detail`, `process-schematic`, `alarms`, `admin-users` |
+| API types | `src/app/models/api.models.ts` | Shared TypeScript models for REST payloads |
+| API base URL | `src/environments/environment*.ts` | **`apiUrl`** must match the API’s HTTP URL (see below) |
 
-From the repository root:
+### Main routes (UI)
+
+| Route | Feature | Notes |
+|-------|---------|--------|
+| `/login` | Login | Unauthenticated entry; JWT obtained here |
+| `/` | Dashboard | Default home after login |
+| `/pipelines/:id` | Pipeline detail | Per-pipeline SCADA view |
+| `/pipelines/:id/process` | Process schematic | SVG process graph, pump control for **Admin/Operator**, live hub updates |
+| `/alarms` | Alarms | Alarm list / management in the UI |
+| `/admin/users` | User admin | **`adminGuard`** — Admin role only |
+
+### Running the Angular dev server
+
+Start the **database and API first** (sections below), then:
+
+**1. Install dependencies** (from repo root):
 
 ```bash
 cd SCADASampleApp
 npm install
 ```
 
-This installs Angular, Angular CLI, and all other front‑end dependencies defined in `package.json`.
-
-### 2. Run the Angular dev server
-
-Still inside `SCADASampleApp/`:
+**2. Start the dev server** (`package.json` maps **`npm start`** → `ng serve`):
 
 ```bash
 npm start
-# or, depending on package.json scripts:
-npm run dev
-# or:
-npm run serve
 ```
 
-Check the `scripts` section in `SCADASampleApp/package.json` if you’re unsure which command is defined.
+The dev server listens at **`http://localhost:4200`** by default. Open that URL, sign in, and use the nav in the shell header.
 
-By default, Angular dev server runs on a URL similar to:
+**3. Point the client at the API (`apiUrl`)**
 
-- `http://localhost:4200`
+The SPA reads the API base URL from:
 
-Open that URL in your browser to load the SCADA sample UI.
+- `src/environments/environment.ts` (production build)
+- `src/environments/environment.development.ts` (used when serving with the **development** configuration — the default for `ng serve` in this project)
 
-### 3. Pointing the client at the API
+Both files define **`apiUrl`**. This must match the URL your API listens on. The API’s **`Properties/launchSettings.json`** profiles use **`http://localhost:5095`** for HTTP (and **`https://localhost:7196`** for HTTPS on the `https` profile). The checked-in environments use **`http://localhost:5095`** so they line up with the **`http`** launch profile.
 
-The Angular application should be configured (e.g., via an `environment.ts` file or similar) with the base URL of the API, such as:
+If you change ports in `launchSettings.json` or run behind another host, update **`apiUrl`** in the environment files so REST calls and SignalR negotiate against the correct origin.
 
-- `https://localhost:7183` or `http://localhost:5183`
+**4. CORS**
 
-If you change the API port or host, update the Angular environment/config files accordingly so HTTP calls from the front‑end reach the correct backend.
+`Program.cs` registers the **`AngularDev`** CORS policy with **`http://localhost:4200`**. If you serve Angular on another origin or port, add it to `WithOrigins(...)` in `SCADASampleAPI/Program.cs` or you will see CORS errors in the browser.
+
+### Build and tests
+
+```bash
+cd SCADASampleApp
+npm run build          # production build (per angular.json)
+npm test               # Karma / Jasmine unit tests
+```
 
 ---
 
@@ -272,20 +315,20 @@ From the `SCADASampleAPI/` directory:
 dotnet run
 ```
 
-By default, ASP.NET Core will host the API on ports similar to:
+Default ports in this repo are set in **`SCADASampleAPI/Properties/launchSettings.json`**:
 
-- HTTP: `http://localhost:5183` (or another dynamically assigned port)
-- HTTPS: `https://localhost:7183` (or similar)
+- **HTTP** profile: `http://localhost:5095` (matches **`apiUrl`** in the Angular environments)
+- **HTTPS** profile: `https://localhost:7196` and `http://localhost:5095`
 
-The exact ports are defined in `Properties/launchSettings.json` or environment variables.
+Your machine may differ if you change `launchSettings.json` or use other launch profiles.
 
 ### 4. Explore the API (Swagger / OpenAPI)
 
 In **Development** mode, Swagger is enabled by `Program.cs`:
 
 - Navigate to the Swagger UI in your browser, e.g.:
-  - `https://localhost:7183/swagger`
-  - or `http://localhost:5183/swagger`
+  - `http://localhost:5095/swagger` (HTTP profile)
+  - or `https://localhost:7196/swagger` (HTTPS profile)
 
 From there you can:
 
@@ -334,22 +377,26 @@ The `ApplicationDbContext` exposes:
 ## Typical Development Workflow
 
 1. **Start the database**
-  - `docker compose up -d`
+   - From the repo root: `docker compose up -d`
 2. **Run the API**
-  - `cd SCADASampleAPI`
-  - `dotnet run`
-3. **Use Swagger UI** to test endpoints and inspect the model
-4. **Iterate on models and controllers**
-  - Add/modify entities in `Models/`
-  - Update mappings in `ApplicationDbContext`
-  - Add/extend controllers in `Controllers/`
+   - `cd SCADASampleAPI`
+   - `dotnet run` (use the **`http`** or **`https`** profile as needed; keep **`apiUrl`** in Angular in sync)
+3. **Run the Angular app**
+   - `cd SCADASampleApp`
+   - `npm install` (first time only)
+   - `npm start` → open **`http://localhost:4200`**, sign in, exercise dashboard, pipelines, process view, and alarms
+4. **Optional: Swagger**
+   - Hit **`/swagger`** on the API URL to try REST calls without the UI
+5. **Iterate**
+   - **Backend:** entities in `Models/`, `ApplicationDbContext`, controllers, hubs
+   - **Front-end:** feature components under `SCADASampleApp/src/app/features/`, shared logic in `core/`, and `environment*.ts` for API URL
 
 ---
 
 ## Notes & Future Enhancements
 
-- Additional SCADA-style entities (tags, trends, events, historian, etc.) can be added under `Models/` and surfaced via new controllers.
+- Additional SCADA-style entities (tags, trends, events, historian, etc.) can be added under `Models/` and surfaced via new controllers and Angular features.
 - Migrations (`dotnet ef migrations`) can be introduced to version and evolve the database schema as the domain model grows.
-- Frontend visualization (e.g., React or Blazor dashboard) could be added as a separate project alongside `SCADASampleAPI` in this solution.
+- The Angular app can be extended with more screens (trends, reports, role-specific dashboards) while reusing `auth.service`, interceptors, and SignalR patterns in `core/`.
 
 This README will evolve as the sample project expands to cover more SCADA scenarios.
