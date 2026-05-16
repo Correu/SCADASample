@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Alarm> Alarms => Set<Alarm>();
     public DbSet<ProcessLocation> ProcessLocations => Set<ProcessLocation>();
     public DbSet<ProcessTransfer> ProcessTransfers => Set<ProcessTransfer>();
+    public DbSet<ProcessLocationFluid> ProcessLocationFluids => Set<ProcessLocationFluid>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -52,5 +53,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(t => t.ToLocationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ProcessLocationFluid>()
+            .HasOne(f => f.ProcessLocation)
+            .WithMany(l => l.Fluids)
+            .HasForeignKey(f => f.ProcessLocationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProcessLocationFluid>()
+            .HasIndex(f => new { f.ProcessLocationId, f.FluidCode })
+            .IsUnique();
     }
 }

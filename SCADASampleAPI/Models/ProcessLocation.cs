@@ -35,4 +35,6 @@ public class ProcessLocation
 
     [ForeignKey(nameof(PipelineId))]
     public Pipeline? Pipeline { get; set; }
+
+    public ICollection<ProcessLocationFluid> Fluids { get; set; } = new List<ProcessLocationFluid>();
 }

@@ -121,6 +121,7 @@ using (var scope = app.Services.CreateScope())
     await DbInitializer.SeedAsync(app.Services);
     await ScadaSeeder.SeedScadaAsync(db);
     await ProcessGraphSeeder.SeedAsync(db);
+    await ProcessNetworkV2Seeder.SeedAsync(db, app.Configuration);
 }
 
 if (app.Environment.IsDevelopment())

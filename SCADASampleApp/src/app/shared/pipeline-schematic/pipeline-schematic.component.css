@@ -1,0 +1,86 @@
+.schematic-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.schematic-wrap.compact .schematic {
+  max-height: 220px;
+}
+
+.schematic {
+  width: 100%;
+  max-height: 360px;
+  display: block;
+}
+
+.edge {
+  stroke-width: 3;
+  fill: none;
+  opacity: 0.55;
+}
+
+.edge-on {
+  opacity: 1;
+}
+
+.edge-flow {
+  stroke-dasharray: 10 8;
+  animation: flow-dash 0.9s linear infinite;
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+.edge-label {
+  font-size: 11px;
+  fill: #475569;
+  pointer-events: none;
+}
+
+.tank-ring {
+  fill: #fff;
+  stroke: #cbd5e1;
+  stroke-width: 2;
+}
+
+.tank-fluid-seg {
+  opacity: 0.85;
+}
+
+.tank-level-bg {
+  fill: #e2e8f0;
+}
+
+.tank-level-fill {
+  fill: #0ea5e9;
+}
+
+.tank-pct {
+  font-size: 10px;
+  fill: #64748b;
+  pointer-events: none;
+}
+
+.tank-code {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #0f172a;
+  pointer-events: none;
+}
+
+.tank-meta {
+  font-size: 10px;
+  fill: #64748b;
+  pointer-events: none;
+}
+
+.tank-fluid {
+  font-size: 9px;
+  fill: #94a3b8;
+  pointer-events: none;
+}

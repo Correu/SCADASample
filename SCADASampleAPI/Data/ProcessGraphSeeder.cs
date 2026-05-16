@@ -60,6 +60,11 @@ public static class ProcessGraphSeeder
             db.ProcessLocations.AddRange(source, mix, discharge);
             await db.SaveChangesAsync(cancellationToken);
 
+            source.Fluids.Add(new ProcessLocationFluid { FluidCode = "OIL", Volume = 75 });
+            mix.Fluids.Add(new ProcessLocationFluid { FluidCode = "OIL", Volume = 25 });
+            mix.Fluids.Add(new ProcessLocationFluid { FluidCode = "WTR", Volume = 20 });
+            discharge.Fluids.Add(new ProcessLocationFluid { FluidCode = "OIL", Volume = 25 });
+
             db.ProcessTransfers.AddRange(
                 new ProcessTransfer
                 {
@@ -68,6 +73,8 @@ public static class ProcessGraphSeeder
                     ToLocationId = mix.ProcessLocationId,
                     IsPumpRunning = false,
                     ValveOpen = true,
+                    FluidCode = "OIL",
+                    OutflowWeight = 1,
                     MaxFlowRate = 35,
                     CurrentFlowRate = 0,
                     LastUpdatedUtc = now
@@ -79,6 +86,8 @@ public static class ProcessGraphSeeder
                     ToLocationId = discharge.ProcessLocationId,
                     IsPumpRunning = true,
                     ValveOpen = true,
+                    FluidCode = "OIL",
+                    OutflowWeight = 1,
                     MaxFlowRate = 28,
                     CurrentFlowRate = 0,
                     LastUpdatedUtc = now

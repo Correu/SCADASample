@@ -9,7 +9,7 @@
 
   @if (pipelineName(); as name) {
     <h2>{{ name }} — process</h2>
-    <p class="sub">{{ pipelineCode() }} · schematic (seeded layout, m³ / m³/h)</p>
+    <p class="sub">{{ pipelineCode() }} · schematic (m³ / m³/h)</p>
   } @else if (!loadError()) {
     <p class="sub">Loading…</p>
   }
@@ -19,64 +19,7 @@
   }
 
   @if (graph(); as g) {
-    <div class="schematic-wrap">
-      <svg class="schematic" viewBox="0 0 640 280" aria-label="Process schematic">
-        <defs>
-          <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-            <path d="M0,0 L8,4 L0,8 z" fill="#64748b" />
-          </marker>
-        </defs>
-
-        @for (t of g.transfers; track t.processTransferId) {
-          @if (locationById(t.fromLocationId); as from) {
-            @if (locationById(t.toLocationId); as to) {
-              <line
-                class="edge"
-                [class.edge-on]="t.isPumpRunning && t.valveOpen"
-                [attr.x1]="from.layoutX"
-                [attr.y1]="from.layoutY"
-                [attr.x2]="to.layoutX"
-                [attr.y2]="to.layoutY"
-                marker-end="url(#arrowhead)"
-              />
-              <text
-                class="edge-label"
-                [attr.x]="midPoint(from, to).x"
-                [attr.y]="midPoint(from, to).y - 8"
-                text-anchor="middle"
-              >
-                {{ t.currentFlowRate | number: '1.1-1' }} m³/h
-              </text>
-            }
-          }
-        }
-
-        @for (loc of g.locations; track loc.processLocationId) {
-          <g [attr.transform]="'translate(' + loc.layoutX + ',' + loc.layoutY + ')'">
-            <circle class="tank-ring" r="42" />
-            <rect class="tank-level-bg" x="-32" y="18" width="64" height="8" rx="2" />
-            <rect
-              class="tank-level-fill"
-              x="-32"
-              y="18"
-              height="8"
-              rx="2"
-              [attr.width]="(64 * fillPercent(loc)) / 100"
-            />
-            <text class="tank-pct" y="-52" text-anchor="middle">{{ fillPercent(loc) | number: '1.0-0' }}%</text>
-            <text class="tank-code" y="6" text-anchor="middle">{{ loc.code }}</text>
-          </g>
-          <text
-            class="tank-meta"
-            [attr.x]="loc.layoutX"
-            [attr.y]="loc.layoutY + 58"
-            text-anchor="middle"
-          >
-            {{ loc.currentVolume | number: '1.0-1' }} / {{ loc.capacity | number: '1.0-0' }} m³
-          </text>
-        }
-      </svg>
-    </div>
+    <app-pipeline-schematic [graph]="g" />
 
     <div class="controls">
       <h3>Pumps</h3>
@@ -85,6 +28,7 @@
           <li>
             <span class="ctrl-label">
               {{ locationById(t.fromLocationId)?.code ?? '?' }} → {{ locationById(t.toLocationId)?.code ?? '?' }}
+              <span class="fluid-tag">{{ t.fluidCode }}</span>
             </span>
             @if (auth.canOperateProcess()) {
               <button

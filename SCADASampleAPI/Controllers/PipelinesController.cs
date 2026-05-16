@@ -95,7 +95,11 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
                 CurrentVolume = l.CurrentVolume,
                 LayoutX = l.LayoutX,
                 LayoutY = l.LayoutY,
-                LastUpdatedUtc = l.LastUpdatedUtc
+                LastUpdatedUtc = l.LastUpdatedUtc,
+                Fluids = l.Fluids
+                    .OrderBy(f => f.FluidCode)
+                    .Select(f => new ProcessLocationFluidDto { FluidCode = f.FluidCode, Volume = f.Volume })
+                    .ToList()
             })
             .ToListAsync();
 
@@ -110,6 +114,8 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
                 ToLocationId = t.ToLocationId,
                 IsPumpRunning = t.IsPumpRunning,
                 ValveOpen = t.ValveOpen,
+                FluidCode = t.FluidCode,
+                OutflowWeight = t.OutflowWeight,
                 MaxFlowRate = t.MaxFlowRate,
                 CurrentFlowRate = t.CurrentFlowRate,
                 LastUpdatedUtc = t.LastUpdatedUtc

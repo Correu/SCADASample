@@ -1,0 +1,76 @@
+@if (graph(); as g) {
+  <div class="schematic-wrap" [class.compact]="compact()">
+    <svg class="schematic" [attr.viewBox]="viewBox()" aria-label="Pipeline schematic">
+      <defs>
+        <marker [attr.id]="markerId" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="#64748b" />
+        </marker>
+      </defs>
+
+      @for (t of g.transfers; track t.processTransferId) {
+        @if (locationById(t.fromLocationId); as from) {
+          @if (locationById(t.toLocationId); as to) {
+            <line
+              [ngClass]="edgeClass(t)"
+              [attr.x1]="from.layoutX"
+              [attr.y1]="from.layoutY"
+              [attr.x2]="to.layoutX"
+              [attr.y2]="to.layoutY"
+              [attr.stroke]="fluidColor(t.fluidCode)"
+              [attr.marker-end]="'url(#' + markerId + ')'"
+            />
+            <text
+              class="edge-label"
+              [attr.x]="midPoint(from, to).x"
+              [attr.y]="midPoint(from, to).y - 8"
+              text-anchor="middle"
+            >
+              {{ t.fluidCode }} {{ t.currentFlowRate | number: '1.1-1' }} m³/h
+            </text>
+          }
+        }
+      }
+
+      @for (loc of g.locations; track loc.processLocationId) {
+        <g [attr.transform]="'translate(' + loc.layoutX + ',' + loc.layoutY + ')'">
+          <circle class="tank-ring" r="42" />
+          @for (f of topFluids(loc); track f.fluidCode; let i = $index) {
+            <rect
+              class="tank-fluid-seg"
+              x="-32"
+              [attr.y]="18 + i * 4"
+              height="3"
+              rx="1"
+              [attr.width]="(64 * fillPercent(loc) * (f.volume / (loc.currentVolume || 1))) / 100"
+              [attr.fill]="fluidColor(f.fluidCode)"
+            />
+          }
+          <rect class="tank-level-bg" x="-32" y="30" width="64" height="6" rx="2" />
+          <rect
+            class="tank-level-fill"
+            x="-32"
+            y="30"
+            height="6"
+            rx="2"
+            [attr.width]="(64 * fillPercent(loc)) / 100"
+          />
+          <text class="tank-pct" y="-52" text-anchor="middle">{{ fillPercent(loc) | number: '1.0-0' }}%</text>
+          <text class="tank-code" y="6" text-anchor="middle">{{ loc.code }}</text>
+        </g>
+        <text class="tank-meta" [attr.x]="loc.layoutX" [attr.y]="loc.layoutY + 58" text-anchor="middle">
+          {{ loc.currentVolume | number: '1.0-1' }} / {{ loc.capacity | number: '1.0-0' }} m³
+        </text>
+        @for (f of topFluids(loc); track f.fluidCode) {
+          <text
+            class="tank-fluid"
+            [attr.x]="loc.layoutX"
+            [attr.y]="loc.layoutY + 72 + $index * 12"
+            text-anchor="middle"
+          >
+            {{ f.fluidCode }} {{ f.volume | number: '1.0-1' }} m³
+          </text>
+        }
+      }
+    </svg>
+  </div>
+}

@@ -1,50 +1,31 @@
 <div class="page">
-  <h2>Pipelines</h2>
-  <p class="sub">Live tag values stream over SignalR; open a pipeline for full tag lists.</p>
+  <h2>Pipeline schematics</h2>
+  <p class="sub">Live process flow per pipeline (m³ / m³/h). Tag lists remain under each pipeline link.</p>
 
-  <div class="grid">
-    @for (p of pipelines(); track p.pipelineId) {
-      <div class="card-wrap">
-        <a class="card" [routerLink]="['/pipelines', p.pipelineId]">
-          <h3>{{ p.name }}</h3>
-          <span class="code">{{ p.code }}</span>
-          <p class="meta">{{ p.tagCount }} tags · {{ p.isActive ? 'Active' : 'Inactive' }}</p>
-        </a>
-        <a class="process-link" [routerLink]="['/pipelines', p.pipelineId, 'process']">Process schematic</a>
-      </div>
+  @if (loading()) {
+    <p class="sub">Loading schematics…</p>
+  }
+
+  <div class="schematic-grid">
+    @for (card of cards(); track card.pipeline.pipelineId) {
+      <article class="schematic-card">
+        <header class="card-head">
+          <div>
+            <h3>{{ card.pipeline.name }}</h3>
+            <span class="code">{{ card.pipeline.code }}</span>
+          </div>
+          <div class="card-links">
+            <a [routerLink]="['/pipelines', card.pipeline.pipelineId, 'process']">Operate</a>
+            <a [routerLink]="['/pipelines', card.pipeline.pipelineId]">Tags</a>
+          </div>
+        </header>
+
+        @if (card.loadError || !card.graph) {
+          <p class="warn">Could not load process graph for this pipeline.</p>
+        } @else {
+          <app-pipeline-schematic [graph]="card.graph" [compact]="true" />
+        }
+      </article>
     }
   </div>
-
-  <h2>Live preview (first pipeline)</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Tag</th>
-        <th>Value</th>
-        <th>Unit</th>
-        <th>Updated</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (t of sampleTags(); track t.tagId) {
-        <tr>
-          <td>{{ t.name }}</td>
-          <td>
-            @if (liveValue(t.tagId); as live) {
-              <strong>{{ live.value | number: '1.0-3' }}</strong>
-            } @else {
-              {{ t.currentValue | number: '1.0-3' }}
-            }
-          </td>
-          <td>{{ (liveValue(t.tagId)?.unit) ?? t.unit }}</td>
-          <td class="muted">
-            {{
-              (liveValue(t.tagId)?.timestampUtc | date: 'mediumTime') ??
-                (t.lastUpdatedUtc | date: 'mediumTime')
-            }}
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
 </div>

@@ -7,18 +7,13 @@ import { finalize } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
 import { ProcessHubService } from '../../core/process-hub.service';
-import {
-  LocationUpdate,
-  ProcessGraph,
-  ProcessLocation,
-  ProcessTransfer,
-  TransferUpdate,
-} from '../../models/api.models';
+import { ProcessGraph, ProcessLocation, ProcessTransfer } from '../../models/api.models';
+import { PipelineSchematicComponent } from '../../shared/pipeline-schematic/pipeline-schematic.component';
 
 @Component({
   selector: 'app-process-schematic',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PipelineSchematicComponent],
   templateUrl: './process-schematic.component.html',
   styleUrl: './process-schematic.component.css',
 })
@@ -82,6 +77,7 @@ export class ProcessSchematicComponent implements OnInit, OnDestroy {
                     currentVolume: u.currentVolume,
                     capacity: u.capacity,
                     lastUpdatedUtc: u.lastUpdatedUtc,
+                    fluids: u.fluids ?? l.fluids,
                   }
                 : l,
             ),
@@ -119,21 +115,6 @@ export class ProcessSchematicComponent implements OnInit, OnDestroy {
 
   locationById(id: number): ProcessLocation | undefined {
     return this.graph()?.locations.find((l) => l.processLocationId === id);
-  }
-
-  fillPercent(loc: ProcessLocation): number {
-    if (loc.capacity <= 0) return 0;
-    return Math.min(100, Math.max(0, (loc.currentVolume / loc.capacity) * 100));
-  }
-
-  midPoint(
-    from: ProcessLocation,
-    to: ProcessLocation,
-  ): { x: number; y: number } {
-    return {
-      x: (from.layoutX + to.layoutX) / 2,
-      y: (from.layoutY + to.layoutY) / 2,
-    };
   }
 
   setPumpRunning(t: ProcessTransfer, running: boolean): void {

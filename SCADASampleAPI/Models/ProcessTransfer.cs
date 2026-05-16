@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SCADASampleAPI.Models;
@@ -23,6 +24,13 @@ public class ProcessTransfer
 
     /// <summary>Instantaneous flow rate (m³/h) from last simulation step.</summary>
     public double CurrentFlowRate { get; set; }
+
+    /// <summary>Product code moved on this leg (must match <see cref="ProcessLocationFluid.FluidCode"/> at endpoints).</summary>
+    [MaxLength(32)]
+    public string FluidCode { get; set; } = "MIX";
+
+    /// <summary>Relative share when multiple outgoing transfers compete from the same source (same tick, same fluid).</summary>
+    public double OutflowWeight { get; set; } = 1;
 
     public DateTimeOffset LastUpdatedUtc { get; set; }
 

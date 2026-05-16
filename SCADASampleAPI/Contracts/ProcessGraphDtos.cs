@@ -1,5 +1,11 @@
 namespace SCADASampleAPI.Contracts;
 
+public class ProcessLocationFluidDto
+{
+    public string FluidCode { get; set; } = "";
+    public double Volume { get; set; }
+}
+
 public class ProcessLocationDto
 {
     public int ProcessLocationId { get; set; }
@@ -12,6 +18,7 @@ public class ProcessLocationDto
     public double LayoutX { get; set; }
     public double LayoutY { get; set; }
     public DateTimeOffset LastUpdatedUtc { get; set; }
+    public List<ProcessLocationFluidDto> Fluids { get; set; } = new();
 }
 
 public class ProcessTransferDto
@@ -22,6 +29,8 @@ public class ProcessTransferDto
     public int ToLocationId { get; set; }
     public bool IsPumpRunning { get; set; }
     public bool ValveOpen { get; set; }
+    public string FluidCode { get; set; } = "";
+    public double OutflowWeight { get; set; }
     public double MaxFlowRate { get; set; }
     public double CurrentFlowRate { get; set; }
     public DateTimeOffset LastUpdatedUtc { get; set; }
@@ -40,12 +49,14 @@ public class LocationUpdateDto
     public double CurrentVolume { get; set; }
     public double Capacity { get; set; }
     public DateTimeOffset LastUpdatedUtc { get; set; }
+    public List<ProcessLocationFluidDto> Fluids { get; set; } = new();
 }
 
 public class TransferUpdateDto
 {
     public int PipelineId { get; set; }
     public int ProcessTransferId { get; set; }
+    public string FluidCode { get; set; } = "";
     public double CurrentFlowRate { get; set; }
     public bool IsPumpRunning { get; set; }
     public bool ValveOpen { get; set; }
