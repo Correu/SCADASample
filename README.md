@@ -8,6 +8,12 @@ This repository is intended as a learning/reference project for:
 - **Entity Framework Core with SQL Server**
 - **Containerized local database development (Azure SQL Edge / SQL Server in Docker)**
 
+### What the site looks like
+
+After signing in, operators land on a **dashboard of live pipeline schematics**. Each card shows a process graph for one pipeline (tanks, checkpoints, substations, and transfer lines), with fill levels and flow rates updating in real time over SignalR. From there you can open **Operate** for pump/valve control, drill into **Tags**, review **Alarms**, or (as Admin) manage **Users**.
+
+![SCADA Sample dashboard — live pipeline schematics](docs/dashboard.png)
+
 ---
 
 ## Project Structure
