@@ -52,8 +52,7 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<IEnumerable<TagSnapshotDto>>> GetTags(int id)
     {
         var exists = await context.Pipelines.AnyAsync(p => p.PipelineId == id);
-        if (!exists)
-            return NotFound();
+        if (!exists) return NotFound();
 
         var tags = await context.Tags.AsNoTracking()
             .Where(t => t.PipelineId == id)
@@ -78,8 +77,7 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<ProcessGraphDto>> GetProcessGraph(int id)
     {
         var exists = await context.Pipelines.AnyAsync(p => p.PipelineId == id);
-        if (!exists)
-            return NotFound();
+        if (!exists) return NotFound();
 
         var locations = await context.ProcessLocations.AsNoTracking()
             .Where(l => l.PipelineId == id)
@@ -88,6 +86,7 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
             {
                 ProcessLocationId = l.ProcessLocationId,
                 PipelineId = l.PipelineId,
+                StationId = l.StationId,
                 Name = l.Name,
                 Code = l.Code,
                 Kind = l.Kind,
@@ -114,15 +113,101 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
                 ToLocationId = t.ToLocationId,
                 IsPumpRunning = t.IsPumpRunning,
                 ValveOpen = t.ValveOpen,
-                FluidCode = t.FluidCode,
-                OutflowWeight = t.OutflowWeight,
                 MaxFlowRate = t.MaxFlowRate,
                 CurrentFlowRate = t.CurrentFlowRate,
-                LastUpdatedUtc = t.LastUpdatedUtc
+                LastUpdatedUtc = t.LastUpdatedUtc,
+                Fluids = t.Fluids
+                    .OrderBy(f => f.FluidCode)
+                    .Select(f => new TransferFluidDto
+                    {
+                        FluidCode = f.FluidCode,
+                        FlowRateFraction = f.FlowRateFraction,
+                        CurrentFlowRate = f.CurrentFlowRate
+                    })
+                    .ToList()
             })
             .ToListAsync();
 
-        return Ok(new ProcessGraphDto { Locations = locations, Transfers = transfers });
+        var stations = await context.Stations.AsNoTracking()
+            .Where(s => s.PipelineId == id)
+            .OrderBy(s => s.Code)
+            .Select(s => new StationDto
+            {
+                StationId = s.StationId,
+                PipelineId = s.PipelineId,
+                Name = s.Name,
+                Code = s.Code,
+                LayoutX = s.LayoutX,
+                LayoutY = s.LayoutY,
+                Locations = s.Locations
+                    .OrderBy(l => l.Code)
+                    .Select(l => new ProcessLocationDto
+                    {
+                        ProcessLocationId = l.ProcessLocationId,
+                        PipelineId = l.PipelineId,
+                        StationId = l.StationId,
+                        Name = l.Name,
+                        Code = l.Code,
+                        Kind = l.Kind,
+                        Capacity = l.Capacity,
+                        CurrentVolume = l.CurrentVolume,
+                        LayoutX = l.LayoutX,
+                        LayoutY = l.LayoutY,
+                        LastUpdatedUtc = l.LastUpdatedUtc,
+                        Fluids = l.Fluids
+                            .OrderBy(f => f.FluidCode)
+                            .Select(f => new ProcessLocationFluidDto { FluidCode = f.FluidCode, Volume = f.Volume })
+                            .ToList()
+                    })
+                    .ToList()
+            })
+            .ToListAsync();
+
+        return Ok(new ProcessGraphDto { Locations = locations, Transfers = transfers, Stations = stations });
+    }
+
+    [HttpGet("{id:int}/stations")]
+    public async Task<ActionResult<IEnumerable<StationDto>>> GetStations(int id)
+    {
+        var exists = await context.Pipelines.AnyAsync(p => p.PipelineId == id);
+        if (!exists) return NotFound();
+
+        var stations = await context.Stations.AsNoTracking()
+            .Where(s => s.PipelineId == id)
+            .OrderBy(s => s.Code)
+            .Select(s => new StationDto
+            {
+                StationId = s.StationId,
+                PipelineId = s.PipelineId,
+                Name = s.Name,
+                Code = s.Code,
+                LayoutX = s.LayoutX,
+                LayoutY = s.LayoutY,
+                Locations = s.Locations
+                    .OrderBy(l => l.Code)
+                    .Select(l => new ProcessLocationDto
+                    {
+                        ProcessLocationId = l.ProcessLocationId,
+                        PipelineId = l.PipelineId,
+                        StationId = l.StationId,
+                        Name = l.Name,
+                        Code = l.Code,
+                        Kind = l.Kind,
+                        Capacity = l.Capacity,
+                        CurrentVolume = l.CurrentVolume,
+                        LayoutX = l.LayoutX,
+                        LayoutY = l.LayoutY,
+                        LastUpdatedUtc = l.LastUpdatedUtc,
+                        Fluids = l.Fluids
+                            .OrderBy(f => f.FluidCode)
+                            .Select(f => new ProcessLocationFluidDto { FluidCode = f.FluidCode, Volume = f.Volume })
+                            .ToList()
+                    })
+                    .ToList()
+            })
+            .ToListAsync();
+
+        return Ok(stations);
     }
 
     [HttpPost("{id:int}/transfers/{transferId:int}/pump")]
@@ -132,12 +217,51 @@ public class PipelinesController(ApplicationDbContext context) : ControllerBase
         var transfer = await context.ProcessTransfers
             .FirstOrDefaultAsync(t => t.ProcessTransferId == transferId && t.PipelineId == id);
 
-        if (transfer == null)
-            return NotFound();
+        if (transfer == null) return NotFound();
 
         transfer.IsPumpRunning = body.Running;
         transfer.LastUpdatedUtc = DateTimeOffset.UtcNow;
         await context.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpPost("{id:int}/transfers/{transferId:int}/valve")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> SetTransferValve(int id, int transferId, [FromBody] ValveStateRequest body)
+    {
+        var transfer = await context.ProcessTransfers
+            .FirstOrDefaultAsync(t => t.ProcessTransferId == transferId && t.PipelineId == id);
+
+        if (transfer == null) return NotFound();
+
+        transfer.ValveOpen = body.Open;
+        transfer.LastUpdatedUtc = DateTimeOffset.UtcNow;
+        await context.SaveChangesAsync();
+        return NoContent();
+    }
+}
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class ProductsController(ApplicationDbContext context) : ControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts()
+    {
+        var products = await context.Products.AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Name)
+            .Select(p => new ProductDto
+            {
+                Code = p.Code,
+                Name = p.Name,
+                HexColor = p.HexColor,
+                ProductType = p.ProductType,
+                Density = p.Density
+            })
+            .ToListAsync();
+
+        return Ok(products);
     }
 }

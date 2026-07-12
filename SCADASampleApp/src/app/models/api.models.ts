@@ -32,16 +32,33 @@ export interface TagValueUpdate {
   timestampUtc: string;
 }
 
-/** Volume in m³; flow rates in m³/h (see README). */
+/** Managed fluid/product catalog entry. */
+export interface Product {
+  code: string;
+  name: string;
+  hexColor: string;
+  productType: string;
+  density: number;
+}
+
+/** Volume in m³; flow rates in m³/h. */
 export interface ProcessLocationFluid {
   fluidCode: string;
   volume: number;
 }
 
-/** Volume in m³; flow rates in m³/h (see README). */
+/** Per-fluid entry on a transfer leg. */
+export interface TransferFluid {
+  fluidCode: string;
+  flowRateFraction: number;
+  currentFlowRate: number;
+}
+
+/** Volume in m³; flow rates in m³/h. */
 export interface ProcessLocation {
   processLocationId: number;
   pipelineId: number;
+  stationId?: number | null;
   name: string;
   code: string;
   kind?: string | null;
@@ -60,35 +77,46 @@ export interface ProcessTransfer {
   toLocationId: number;
   isPumpRunning: boolean;
   valveOpen: boolean;
-  fluidCode: string;
-  outflowWeight: number;
   maxFlowRate: number;
   currentFlowRate: number;
   lastUpdatedUtc: string;
+  fluids: TransferFluid[];
+}
+
+export interface Station {
+  stationId: number;
+  pipelineId: number;
+  name: string;
+  code: string;
+  layoutX: number;
+  layoutY: number;
+  locations: ProcessLocation[];
 }
 
 export interface ProcessGraph {
   locations: ProcessLocation[];
   transfers: ProcessTransfer[];
+  stations: Station[];
 }
 
 export interface LocationUpdate {
   pipelineId: number;
   processLocationId: number;
+  stationId?: number | null;
   currentVolume: number;
   capacity: number;
   lastUpdatedUtc: string;
-  fluids?: ProcessLocationFluid[];
+  fluids: ProcessLocationFluid[];
 }
 
 export interface TransferUpdate {
   pipelineId: number;
   processTransferId: number;
-  fluidCode?: string;
   currentFlowRate: number;
   isPumpRunning: boolean;
   valveOpen: boolean;
   lastUpdatedUtc: string;
+  fluids: TransferFluid[];
 }
 
 export interface Alarm {

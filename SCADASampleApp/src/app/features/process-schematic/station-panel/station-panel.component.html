@@ -1,0 +1,52 @@
+@if (stations().length > 0) {
+  <div class="stations-grid">
+    @for (station of stations(); track station.stationId) {
+      <div class="station-card">
+        <h4 class="station-name">{{ station.name }}</h4>
+        <span class="station-code">{{ station.code }}</span>
+
+        <div class="tanks-list">
+          @for (stLoc of station.locations; track stLoc.processLocationId) {
+            @let loc = liveLocation(stLoc);
+            <div class="tank-row">
+              <div class="tank-header">
+                <span class="tank-code-badge">{{ loc.code }}</span>
+                <span class="tank-name">{{ loc.name }}</span>
+                <span class="tank-pct">{{ fillPercent(loc) | number: '1.0-0' }}%</span>
+              </div>
+
+              <!-- Multi-fluid capacity bar -->
+              <div class="cap-bar-wrap">
+                <div class="cap-bar">
+                  @for (f of sortedFluids(loc); track f.fluidCode) {
+                    @if (f.volume > 0) {
+                      <div
+                        class="cap-segment"
+                        [style.width.%]="fluidFillWidth(loc, f.volume)"
+                        [style.background]="fluidColor(f.fluidCode)"
+                        [title]="f.fluidCode + ': ' + (f.volume | number: '1.0-1') + ' m³'"
+                      ></div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <!-- Fluid volume breakdown -->
+              <div class="fluid-breakdown">
+                @for (f of sortedFluids(loc); track f.fluidCode) {
+                  @if (f.volume > 0) {
+                    <span class="fluid-chip">
+                      <span class="fluid-dot" [style.background]="fluidColor(f.fluidCode)"></span>
+                      {{ f.fluidCode }} {{ f.volume | number: '1.0-1' }} m³
+                    </span>
+                  }
+                }
+                <span class="tank-capacity">/ {{ loc.capacity | number: '1.0-0' }} m³ cap</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

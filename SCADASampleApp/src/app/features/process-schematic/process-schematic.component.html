@@ -21,30 +21,95 @@
   @if (graph(); as g) {
     <app-pipeline-schematic [graph]="g" />
 
-    <div class="controls">
-      <h3>Pumps</h3>
-      <ul>
-        @for (t of g.transfers; track t.processTransferId) {
-          <li>
-            <span class="ctrl-label">
-              {{ locationById(t.fromLocationId)?.code ?? '?' }} → {{ locationById(t.toLocationId)?.code ?? '?' }}
-              <span class="fluid-tag">{{ t.fluidCode }}</span>
-            </span>
-            @if (auth.canOperateProcess()) {
-              <button
-                type="button"
-                class="pump-btn"
-                [disabled]="pumpBusy()[t.processTransferId]"
-                (click)="setPumpRunning(t, !t.isPumpRunning)"
-              >
-                {{ t.isPumpRunning ? 'Stop pump' : 'Start pump' }}
-              </button>
-            } @else {
-              <span class="muted">Pump {{ t.isPumpRunning ? 'on' : 'off' }} (view only)</span>
-            }
-          </li>
+    <!-- Tab strip -->
+    <div class="tab-strip">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'controls'"
+        (click)="activeTab.set('controls')"
+        type="button"
+      >
+        Pump &amp; Valve Controls
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'stations'"
+        (click)="activeTab.set('stations')"
+        type="button"
+      >
+        Station Tanks
+        @if (stations().length > 0) {
+          <span class="tab-badge">{{ stations().length }}</span>
         }
-      </ul>
+      </button>
     </div>
+
+    <!-- Controls tab -->
+    @if (activeTab() === 'controls') {
+      <div class="controls">
+        <ul>
+          @for (t of g.transfers; track t.processTransferId) {
+            <li>
+              <div class="ctrl-row">
+                <span class="ctrl-label">
+                  {{ locationById(t.fromLocationId)?.code ?? '?' }} → {{ locationById(t.toLocationId)?.code ?? '?' }}
+                </span>
+
+                <!-- Fluid badges for this transfer leg -->
+                <span class="fluid-badges">
+                  @for (f of t.fluids; track f.fluidCode) {
+                    <span class="fluid-badge">{{ f.fluidCode }}</span>
+                  }
+                </span>
+
+                <!-- Flow rate display -->
+                @if (t.currentFlowRate > 0) {
+                  <span class="flow-rate">{{ t.currentFlowRate | number: '1.1-1' }} m³/h</span>
+                }
+              </div>
+
+              <div class="ctrl-actions">
+                <!-- Pump control -->
+                @if (auth.canOperateProcess()) {
+                  <button
+                    type="button"
+                    class="pump-btn"
+                    [class.pump-on]="t.isPumpRunning"
+                    [disabled]="pumpBusy()[t.processTransferId]"
+                    (click)="setPumpRunning(t, !t.isPumpRunning)"
+                  >
+                    @if (t.isPumpRunning) { Stop pump } @else { Start pump }
+                  </button>
+                } @else {
+                  <span class="muted">Pump {{ t.isPumpRunning ? 'ON' : 'OFF' }}</span>
+                }
+
+                <!-- Valve control -->
+                @if (auth.canOperateProcess()) {
+                  <button
+                    type="button"
+                    class="valve-btn"
+                    [class.valve-closed]="!t.valveOpen"
+                    [disabled]="valveBusy()[t.processTransferId]"
+                    (click)="setValveOpen(t, !t.valveOpen)"
+                  >
+                    @if (t.valveOpen) { Close valve } @else { Open valve }
+                  </button>
+                } @else {
+                  <span class="muted valve-status" [class.closed]="!t.valveOpen">
+                    Valve {{ t.valveOpen ? 'open' : 'CLOSED' }}
+                  </span>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- Stations tab -->
+    @if (activeTab() === 'stations') {
+      <app-station-panel [stations]="stations()" [locations]="locations()" />
+    }
   }
 </div>

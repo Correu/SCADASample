@@ -341,9 +341,14 @@ namespace SCADASampleAPI.Data.Migrations
                     b.Property<int>("PipelineId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("StationId")
+                        .HasColumnType("int");
+
                     b.HasKey("ProcessLocationId");
 
                     b.HasIndex("PipelineId");
+
+                    b.HasIndex("StationId");
 
                     b.ToTable("ScadaProcessLocations");
                 });
@@ -389,11 +394,6 @@ namespace SCADASampleAPI.Data.Migrations
                     b.Property<int>("FromLocationId")
                         .HasColumnType("int");
 
-                    b.Property<string>("FluidCode")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
                     b.Property<bool>("IsPumpRunning")
                         .HasColumnType("bit");
 
@@ -401,9 +401,6 @@ namespace SCADASampleAPI.Data.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<double>("MaxFlowRate")
-                        .HasColumnType("float");
-
-                    b.Property<double>("OutflowWeight")
                         .HasColumnType("float");
 
                     b.Property<int>("PipelineId")
@@ -424,6 +421,105 @@ namespace SCADASampleAPI.Data.Migrations
                     b.HasIndex("ToLocationId");
 
                     b.ToTable("ScadaProcessTransfers");
+                });
+
+            modelBuilder.Entity("SCADASampleAPI.Models.ProcessTransferFluid", b =>
+                {
+                    b.Property<int>("ProcessTransferFluidId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProcessTransferFluidId"));
+
+                    b.Property<double>("CurrentFlowRate")
+                        .HasColumnType("float");
+
+                    b.Property<string>("FluidCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<double>("FlowRateFraction")
+                        .HasColumnType("float");
+
+                    b.Property<double>("OutflowWeight")
+                        .HasColumnType("float");
+
+                    b.Property<int>("ProcessTransferId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProcessTransferFluidId");
+
+                    b.HasIndex("ProcessTransferId", "FluidCode")
+                        .IsUnique();
+
+                    b.ToTable("ScadaProcessTransferFluids");
+                });
+
+            modelBuilder.Entity("SCADASampleAPI.Models.Product", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<double>("Density")
+                        .HasColumnType("float");
+
+                    b.Property<string>("HexColor")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("ProductType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("SCADASampleAPI.Models.Station", b =>
+                {
+                    b.Property<int>("StationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StationId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<double>("LayoutX")
+                        .HasColumnType("float");
+
+                    b.Property<double>("LayoutY")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("PipelineId")
+                        .HasColumnType("int");
+
+                    b.HasKey("StationId");
+
+                    b.HasIndex("PipelineId");
+
+                    b.ToTable("ScadaStations");
                 });
 
             modelBuilder.Entity("SCADASampleAPI.Models.Tag", b =>
@@ -544,7 +640,14 @@ namespace SCADASampleAPI.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SCADASampleAPI.Models.Station", "Station")
+                        .WithMany("Locations")
+                        .HasForeignKey("StationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Pipeline");
+
+                    b.Navigation("Station");
                 });
 
             modelBuilder.Entity("SCADASampleAPI.Models.ProcessLocationFluid", b =>
@@ -556,11 +659,6 @@ namespace SCADASampleAPI.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("ProcessLocation");
-                });
-
-            modelBuilder.Entity("SCADASampleAPI.Models.ProcessLocation", b =>
-                {
-                    b.Navigation("Fluids");
                 });
 
             modelBuilder.Entity("SCADASampleAPI.Models.ProcessTransfer", b =>
@@ -585,9 +683,35 @@ namespace SCADASampleAPI.Data.Migrations
 
                     b.Navigation("FromLocation");
 
+                    b.Navigation("Fluids");
+
                     b.Navigation("Pipeline");
 
                     b.Navigation("ToLocation");
+                });
+
+            modelBuilder.Entity("SCADASampleAPI.Models.ProcessTransferFluid", b =>
+                {
+                    b.HasOne("SCADASampleAPI.Models.ProcessTransfer", "Transfer")
+                        .WithMany("Fluids")
+                        .HasForeignKey("ProcessTransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Transfer");
+                });
+
+            modelBuilder.Entity("SCADASampleAPI.Models.Station", b =>
+                {
+                    b.HasOne("SCADASampleAPI.Models.Pipeline", "Pipeline")
+                        .WithMany()
+                        .HasForeignKey("PipelineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Locations");
+
+                    b.Navigation("Pipeline");
                 });
 
             modelBuilder.Entity("SCADASampleAPI.Models.Tag", b =>
@@ -610,6 +734,11 @@ namespace SCADASampleAPI.Data.Migrations
                     b.Navigation("ProcessTransfers");
 
                     b.Navigation("Tags");
+                });
+
+            modelBuilder.Entity("SCADASampleAPI.Models.ProcessLocation", b =>
+                {
+                    b.Navigation("Fluids");
                 });
 
             modelBuilder.Entity("SCADASampleAPI.Models.Tag", b =>

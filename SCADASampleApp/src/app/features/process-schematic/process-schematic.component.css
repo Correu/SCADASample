@@ -1,5 +1,5 @@
 .page {
-  max-width: 900px;
+  max-width: 1000px;
 }
 
 .back {
@@ -26,11 +26,6 @@ h2 {
   font-size: 1.25rem;
 }
 
-h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-}
-
 .sub {
   color: #64748b;
   margin: 0 0 1.25rem;
@@ -44,15 +39,51 @@ h3 {
 
 app-pipeline-schematic {
   display: block;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
-.fluid-tag {
-  margin-left: 0.35rem;
-  font-size: 0.75rem;
+/* Tab strip */
+.tab-strip {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1.1rem;
+  border: none;
+  background: transparent;
   color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
+.tab-btn:hover {
+  color: #0f172a;
+}
+
+.tab-btn.active {
+  color: #0369a1;
+  border-bottom-color: #0369a1;
+}
+
+.tab-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 1px 6px;
+}
+
+/* Controls list */
 .controls ul {
   list-style: none;
   margin: 0;
@@ -60,33 +91,78 @@ app-pipeline-schematic {
 }
 
 .controls li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ctrl-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 0.5rem;
   font-size: 0.9rem;
 }
 
 .ctrl-label {
-  min-width: 120px;
   font-family: ui-monospace, monospace;
   color: #334155;
+  min-width: 110px;
 }
 
+.fluid-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.fluid-badge {
+  font-size: 0.7rem;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: ui-monospace, monospace;
+}
+
+.flow-rate {
+  font-size: 0.8rem;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+.ctrl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Pump button */
 .pump-btn {
-  padding: 0.35rem 0.75rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 6px;
   border: 1px solid #0ea5e9;
   background: #fff;
   color: #0369a1;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+}
+
+.pump-btn.pump-on {
+  background: #0ea5e9;
+  color: #fff;
 }
 
 .pump-btn:hover:not(:disabled) {
   background: #e0f2fe;
+  color: #0369a1;
+}
+
+.pump-btn.pump-on:hover:not(:disabled) {
+  background: #0284c7;
 }
 
 .pump-btn:disabled {
@@ -94,7 +170,42 @@ app-pipeline-schematic {
   cursor: not-allowed;
 }
 
+/* Valve button */
+.valve-btn {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid #94a3b8;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.valve-btn.valve-closed {
+  border-color: #ef4444;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.valve-btn:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.valve-btn.valve-closed:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.valve-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .muted {
   color: #94a3b8;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+}
+
+.valve-status.closed {
+  color: #dc2626;
+  font-weight: 500;
 }

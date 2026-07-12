@@ -1,6 +1,6 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
@@ -15,13 +15,16 @@ import { Alarm } from '../../models/api.models';
 })
 export class AlarmsComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly platformId = inject(PLATFORM_ID);
   readonly auth = inject(AuthService);
 
   readonly alarms = signal<Alarm[]>([]);
   pipelineFilter: number | null = null;
 
   ngOnInit(): void {
-    this.load();
+    if (isPlatformBrowser(this.platformId)) {
+      this.load();
+    }
   }
 
   load(): void {

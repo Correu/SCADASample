@@ -1,0 +1,122 @@
+.stations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.station-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.station-name {
+  margin: 0 0 0.15rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.station-code {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-bottom: 0.6rem;
+}
+
+.tanks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tank-row {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.6rem;
+}
+
+.tank-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.tank-code-badge {
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.tank-name {
+  font-size: 0.8rem;
+  color: #334155;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tank-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Capacity bar */
+.cap-bar-wrap {
+  margin-bottom: 0.3rem;
+}
+
+.cap-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.cap-segment {
+  height: 100%;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+/* Fluid detail chips */
+.fluid-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+  font-size: 0.72rem;
+  color: #475569;
+}
+
+.fluid-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.fluid-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tank-capacity {
+  color: #94a3b8;
+  font-size: 0.7rem;
+}

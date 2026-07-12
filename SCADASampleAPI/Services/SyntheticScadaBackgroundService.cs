@@ -40,8 +40,10 @@ public class SyntheticScadaBackgroundService : BackgroundService
                 var now = DateTimeOffset.UtcNow;
                 var dtHours = Math.Max(1, _options.UpdateIntervalSeconds) / 3600.0;
 
+                // Load transfers with their per-fluid entries and both endpoint location fluid buckets
                 var transfers = await db.ProcessTransfers
                     .Include(t => t.Pipeline)
+                    .Include(t => t.Fluids)
                     .Include(t => t.FromLocation!).ThenInclude(l => l.Fluids)
                     .Include(t => t.ToLocation!).ThenInclude(l => l.Fluids)
                     .Where(t => t.Pipeline!.IsActive)
@@ -49,88 +51,101 @@ public class SyntheticScadaBackgroundService : BackgroundService
                     .ToListAsync(stoppingToken);
 
                 var touchedLocations = new Dictionary<int, ProcessLocation>();
-                var allocations = transfers.ToDictionary(t => t.ProcessTransferId, _ => 0.0);
 
+                // Compute allocation per (FromLocationId, FluidCode) group across all active transfer-fluid pairs.
+                // Key: (transferFluidId) -> volume allocated this tick (m³)
+                var tfAllocations = new Dictionary<int, double>();
+
+                // Active legs: pump on, valve open, both endpoints present
                 var activeTransfers = transfers
                     .Where(t => t.IsPumpRunning && t.ValveOpen && t.FromLocation != null && t.ToLocation != null)
                     .ToList();
 
-                foreach (var g in activeTransfers.GroupBy(t => (t.FromLocationId, t.FluidCode)))
+                // Group all transfer-fluid pairs by (FromLocationId, FluidCode) to allocate source fairly
+                var activePairs = activeTransfers
+                    .SelectMany(t => t.Fluids.Select(f => (Transfer: t, TransferFluid: f)))
+                    .ToList();
+
+                foreach (var g in activePairs.GroupBy(p => (p.Transfer.FromLocationId, p.TransferFluid.FluidCode)))
                 {
                     var list = g.ToList();
-                    var src = list[0].FromLocation!;
-                    var srcFluid = GetOrCreateFluid(src, g.Key.Item2);
-                    var fluidAvailable = srcFluid.Volume;
-                    if (fluidAvailable <= 0)
-                        continue;
-
-                    var weightSum = list.Sum(t => Math.Max(t.OutflowWeight, 1e-9));
-                    var desired = new List<double>(list.Count);
-                    foreach (var t in list)
+                    var src = list[0].Transfer.FromLocation!;
+                    var srcFluid = GetOrCreateFluid(src, g.Key.FluidCode);
+                    var available = srcFluid.Volume;
+                    if (available <= 0)
                     {
-                        var dst = t.ToLocation!;
-                        var cap = t.MaxFlowRate * dtHours;
-                        var toSpace = Math.Max(0, dst.Capacity - dst.CurrentVolume);
-                        var w = Math.Max(t.OutflowWeight, 1e-9);
-                        var fluidShare = fluidAvailable * (w / weightSum);
-                        desired.Add(Math.Min(cap, Math.Min(toSpace, fluidShare)));
+                        foreach (var pair in list)
+                            tfAllocations[pair.TransferFluid.ProcessTransferFluidId] = 0;
+                        continue;
                     }
 
-                    var totalDesired = desired.Sum();
-                    var scale = totalDesired > fluidAvailable && totalDesired > 0 ? fluidAvailable / totalDesired : 1.0;
-                    for (var i = 0; i < list.Count; i++)
-                        allocations[list[i].ProcessTransferId] = desired[i] * scale;
+                    var weightSum = list.Sum(p => Math.Max(p.TransferFluid.OutflowWeight, 1e-9));
+                    var desired = new List<(int Id, double Amount)>(list.Count);
+                    foreach (var (t, tf) in list)
+                    {
+                        var dst = t.ToLocation!;
+                        var fluidCap = t.MaxFlowRate * tf.FlowRateFraction * dtHours;
+                        var toSpace = Math.Max(0, dst.Capacity - dst.CurrentVolume);
+                        var w = Math.Max(tf.OutflowWeight, 1e-9);
+                        var share = available * (w / weightSum);
+                        desired.Add((tf.ProcessTransferFluidId, Math.Min(fluidCap, Math.Min(toSpace, share))));
+                    }
+
+                    var totalDesired = desired.Sum(d => d.Amount);
+                    var scale = totalDesired > available && totalDesired > 0 ? available / totalDesired : 1.0;
+                    foreach (var (id, amount) in desired)
+                        tfAllocations[id] = amount * scale;
                 }
 
+                // Apply allocations: move fluid volumes and update flow rates
                 foreach (var t in transfers)
                 {
                     var src = t.FromLocation;
                     var dst = t.ToLocation;
-                    if (src == null || dst == null)
-                        continue;
+                    if (src == null || dst == null) continue;
 
                     if (!t.IsPumpRunning || !t.ValveOpen)
                     {
+                        foreach (var tf in t.Fluids)
+                            tf.CurrentFlowRate = 0;
                         t.CurrentFlowRate = 0;
                         t.LastUpdatedUtc = now;
                         continue;
                     }
 
-                    var dv = allocations[t.ProcessTransferId];
-                    if (dv <= 0)
+                    var totalDv = 0.0;
+                    foreach (var tf in t.Fluids)
                     {
-                        t.CurrentFlowRate = 0;
-                        t.LastUpdatedUtc = now;
-                        continue;
+                        if (!tfAllocations.TryGetValue(tf.ProcessTransferFluidId, out var dv) || dv <= 0)
+                        {
+                            tf.CurrentFlowRate = 0;
+                            continue;
+                        }
+
+                        var srcFluid = GetOrCreateFluid(src, tf.FluidCode);
+                        var dstFluid = GetOrCreateFluid(dst, tf.FluidCode);
+                        srcFluid.Volume = Math.Max(0, srcFluid.Volume - dv);
+                        dstFluid.Volume += dv;
+
+                        tf.CurrentFlowRate = dtHours > 0 ? dv / dtHours : 0;
+                        totalDv += dv;
                     }
 
-                    var srcFluid = GetOrCreateFluid(src, t.FluidCode);
-                    var dstFluid = GetOrCreateFluid(dst, t.FluidCode);
-                    srcFluid.Volume -= dv;
-                    dstFluid.Volume += dv;
-                    if (srcFluid.Volume < 0)
-                        srcFluid.Volume = 0;
+                    if (totalDv > 0)
+                    {
+                        RecomputeLocationVolume(src);
+                        RecomputeLocationVolume(dst);
+                        src.LastUpdatedUtc = now;
+                        dst.LastUpdatedUtc = now;
+                        touchedLocations[src.ProcessLocationId] = src;
+                        touchedLocations[dst.ProcessLocationId] = dst;
+                    }
 
-                    RecomputeLocationVolume(src);
-                    RecomputeLocationVolume(dst);
-
-                    t.CurrentFlowRate = dtHours > 0 ? dv / dtHours : 0;
+                    t.CurrentFlowRate = dtHours > 0 ? totalDv / dtHours : 0;
                     t.LastUpdatedUtc = now;
-                    src.LastUpdatedUtc = now;
-                    dst.LastUpdatedUtc = now;
-                    touchedLocations[src.ProcessLocationId] = src;
-                    touchedLocations[dst.ProcessLocationId] = dst;
                 }
 
-                var tags = await db.Tags
-                    .Include(t => t.Pipeline)
-                    .Where(t => t.Pipeline!.IsActive)
-                    .ToListAsync(stoppingToken);
-
-                var alarms = await db.Alarms
-                    .Where(a => a.IsEnabled)
-                    .ToListAsync(stoppingToken);
-
+                // Push location updates for touched locations
                 foreach (var loc in touchedLocations.Values)
                 {
                     var dto = new LocationUpdateDto
@@ -148,26 +163,44 @@ public class SyntheticScadaBackgroundService : BackgroundService
                     await hubContext.Clients.All.SendAsync("LocationUpdate", dto, stoppingToken);
                 }
 
+                // Push transfer updates — now includes per-fluid flow details
                 foreach (var t in transfers)
                 {
                     var dto = new TransferUpdateDto
                     {
                         PipelineId = t.PipelineId,
                         ProcessTransferId = t.ProcessTransferId,
-                        FluidCode = t.FluidCode,
                         CurrentFlowRate = t.CurrentFlowRate,
                         IsPumpRunning = t.IsPumpRunning,
                         ValveOpen = t.ValveOpen,
-                        LastUpdatedUtc = t.LastUpdatedUtc
+                        LastUpdatedUtc = t.LastUpdatedUtc,
+                        Fluids = t.Fluids
+                            .OrderBy(f => f.FluidCode)
+                            .Select(f => new TransferFluidDto
+                            {
+                                FluidCode = f.FluidCode,
+                                FlowRateFraction = f.FlowRateFraction,
+                                CurrentFlowRate = f.CurrentFlowRate
+                            })
+                            .ToList()
                     };
                     await hubContext.Clients.All.SendAsync("TransferUpdate", dto, stoppingToken);
                 }
 
+                // Tag random-walk and alarm evaluation
+                var tags = await db.Tags
+                    .Include(t => t.Pipeline)
+                    .Where(t => t.Pipeline!.IsActive)
+                    .ToListAsync(stoppingToken);
+
+                var alarms = await db.Alarms
+                    .Where(a => a.IsEnabled)
+                    .ToListAsync(stoppingToken);
+
                 foreach (var tag in tags)
                 {
                     var range = tag.MaxValue - tag.MinValue;
-                    if (range <= 0)
-                        continue;
+                    if (range <= 0) continue;
 
                     var step = range * _options.StepFraction * (Random.Shared.NextDouble() * 2 - 1);
                     var next = tag.CurrentValue + step;
@@ -179,7 +212,7 @@ public class SyntheticScadaBackgroundService : BackgroundService
                     tag.CurrentValue = Math.Round(next, 3);
                     tag.LastUpdatedUtc = DateTimeOffset.UtcNow;
 
-                    var dto = new TagValueUpdateDto
+                    var tagDto = new TagValueUpdateDto
                     {
                         PipelineId = tag.PipelineId,
                         TagId = tag.TagId,
@@ -188,8 +221,7 @@ public class SyntheticScadaBackgroundService : BackgroundService
                         Unit = tag.Unit,
                         TimestampUtc = tag.LastUpdatedUtc
                     };
-
-                    await hubContext.Clients.All.SendAsync("TagUpdate", dto, stoppingToken);
+                    await hubContext.Clients.All.SendAsync("TagUpdate", tagDto, stoppingToken);
 
                     foreach (var alarm in alarms.Where(a => a.TagId == tag.TagId && a.PipelineId == tag.PipelineId))
                     {
@@ -229,8 +261,7 @@ public class SyntheticScadaBackgroundService : BackgroundService
     private static ProcessLocationFluid GetOrCreateFluid(ProcessLocation loc, string fluidCode)
     {
         var f = loc.Fluids.FirstOrDefault(x => x.FluidCode == fluidCode);
-        if (f != null)
-            return f;
+        if (f != null) return f;
         f = new ProcessLocationFluid
         {
             ProcessLocationId = loc.ProcessLocationId,
@@ -243,7 +274,6 @@ public class SyntheticScadaBackgroundService : BackgroundService
 
     private static void RecomputeLocationVolume(ProcessLocation loc)
     {
-        loc.CurrentVolume = loc.Fluids.Sum(x => x.Volume);
-        loc.CurrentVolume = Math.Clamp(loc.CurrentVolume, 0, loc.Capacity);
+        loc.CurrentVolume = Math.Clamp(loc.Fluids.Sum(x => x.Volume), 0, loc.Capacity);
     }
 }

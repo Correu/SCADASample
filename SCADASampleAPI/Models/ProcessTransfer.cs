@@ -19,18 +19,11 @@ public class ProcessTransfer
 
     public bool ValveOpen { get; set; } = true;
 
-    /// <summary>Maximum flow rate (m³/h).</summary>
+    /// <summary>Maximum combined flow rate across all fluids on this leg (m³/h).</summary>
     public double MaxFlowRate { get; set; }
 
-    /// <summary>Instantaneous flow rate (m³/h) from last simulation step.</summary>
+    /// <summary>Combined instantaneous flow rate from last simulation tick (m³/h).</summary>
     public double CurrentFlowRate { get; set; }
-
-    /// <summary>Product code moved on this leg (must match <see cref="ProcessLocationFluid.FluidCode"/> at endpoints).</summary>
-    [MaxLength(32)]
-    public string FluidCode { get; set; } = "MIX";
-
-    /// <summary>Relative share when multiple outgoing transfers compete from the same source (same tick, same fluid).</summary>
-    public double OutflowWeight { get; set; } = 1;
 
     public DateTimeOffset LastUpdatedUtc { get; set; }
 
@@ -42,4 +35,6 @@ public class ProcessTransfer
 
     [ForeignKey(nameof(ToLocationId))]
     public ProcessLocation? ToLocation { get; set; }
+
+    public ICollection<ProcessTransferFluid> Fluids { get; set; } = new List<ProcessTransferFluid>();
 }

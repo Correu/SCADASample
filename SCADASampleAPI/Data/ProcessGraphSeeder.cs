@@ -73,11 +73,10 @@ public static class ProcessGraphSeeder
                     ToLocationId = mix.ProcessLocationId,
                     IsPumpRunning = false,
                     ValveOpen = true,
-                    FluidCode = "OIL",
-                    OutflowWeight = 1,
                     MaxFlowRate = 35,
                     CurrentFlowRate = 0,
-                    LastUpdatedUtc = now
+                    LastUpdatedUtc = now,
+                    Fluids = [new ProcessTransferFluid { FluidCode = "OIL", FlowRateFraction = 1.0, OutflowWeight = 1.0 }]
                 },
                 new ProcessTransfer
                 {
@@ -86,11 +85,10 @@ public static class ProcessGraphSeeder
                     ToLocationId = discharge.ProcessLocationId,
                     IsPumpRunning = true,
                     ValveOpen = true,
-                    FluidCode = "OIL",
-                    OutflowWeight = 1,
                     MaxFlowRate = 28,
                     CurrentFlowRate = 0,
-                    LastUpdatedUtc = now
+                    LastUpdatedUtc = now,
+                    Fluids = [new ProcessTransferFluid { FluidCode = "OIL", FlowRateFraction = 1.0, OutflowWeight = 1.0 }]
                 });
         }
 

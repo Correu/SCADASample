@@ -15,6 +15,22 @@
   display: block;
 }
 
+/* Station bounding boxes */
+.station-box {
+  fill: rgba(148, 163, 184, 0.07);
+  stroke: #cbd5e1;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+
+.station-label {
+  font-size: 10px;
+  fill: #94a3b8;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* Pipe edges */
 .edge {
   stroke-width: 3;
   fill: none;
@@ -37,11 +53,25 @@
 }
 
 .edge-label {
-  font-size: 11px;
+  font-size: 10px;
   fill: #475569;
   pointer-events: none;
 }
 
+/* Valve closed indicator */
+.valve-closed {
+  fill: #fee2e2;
+  stroke: #ef4444;
+  stroke-width: 1.5;
+}
+
+.valve-cross {
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* Tank nodes */
 .tank-ring {
   fill: #fff;
   stroke: #cbd5e1;
@@ -81,6 +111,28 @@
 
 .tank-fluid {
   font-size: 9px;
-  fill: #94a3b8;
   pointer-events: none;
+}
+
+/* Fluid legend strip */
+.fluid-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  padding: 0.4rem 0.5rem 0;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  margin-right: 0.25rem;
 }

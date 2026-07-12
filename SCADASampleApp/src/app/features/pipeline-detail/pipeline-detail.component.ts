@@ -1,6 +1,6 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -18,6 +18,7 @@ export class PipelineDetailComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly hub = inject(ProcessHubService);
+  private readonly platformId = inject(PLATFORM_ID);
 
   readonly pipeline = signal<PipelineSummary | null>(null);
   readonly tags = signal<TagSnapshot[]>([]);
@@ -29,6 +30,10 @@ export class PipelineDetailComponent implements OnInit, OnDestroy {
     const id = this.route.snapshot.paramMap.get('id');
     const pipelineId = id ? Number(id) : NaN;
     if (Number.isNaN(pipelineId)) {
+      return;
+    }
+
+    if (!isPlatformBrowser(this.platformId)) {
       return;
     }
 

@@ -33,8 +33,14 @@ public class ProcessLocation
 
     public DateTimeOffset LastUpdatedUtc { get; set; }
 
+    /// <summary>Optional station this location belongs to. Null for unassigned locations.</summary>
+    public int? StationId { get; set; }
+
     [ForeignKey(nameof(PipelineId))]
     public Pipeline? Pipeline { get; set; }
+
+    [ForeignKey(nameof(StationId))]
+    public Station? Station { get; set; }
 
     public ICollection<ProcessLocationFluid> Fluids { get; set; } = new List<ProcessLocationFluid>();
 }
